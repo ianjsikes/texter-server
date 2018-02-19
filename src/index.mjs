@@ -4,28 +4,50 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import bodyParser from 'koa-bodyparser'
 import Mongo from 'mongodb'
+import dotenv from 'dotenv'
 
 import { FirebaseService } from './firebase'
 import { hasKeys } from './util'
 import * as DB from './db'
+import { Twilio } from './twilio'
 
+dotenv.config()
 const app = new Koa()
 const router = new Router()
-const fb = new FirebaseService()
 
 router.post('/incoming', async (ctx, next) => {
   console.log('incoming message: ', ctx.request.body)
   console.log('body type', typeof ctx.request.body)
-  await fb.addIncomingMessage(ctx.request.body)
+  await ctx.fb.addIncomingMessage(ctx.request.body)
   ctx.status = 200
 })
 
 router.get('/', async (ctx, next) => {
-  ctx.body = JSON.stringify(await fb.getAllData(), null, 2)
+  ctx.body = JSON.stringify(await ctx.fb.getAllData(), null, 2)
 })
 
 /**
+ * Handles twilio message status webhooks and updates the
+ * corresponding message on Firebase
+ */
+router.post('/twilio', async (ctx, next) => {
+  const message = ctx.request.body
+  switch (message.MessageStatus) {
+    case 'delivered':
+    case 'undelivered':
+    case 'failed':
+      ctx.fb.setMessageStatus(message.To, message.MessageSid, message.MessageStatus)
+      break
+    default:
+      break
+  }
+  ctx.status = 200
+})
+
+/**
+ * =========
  * CAMPAIGNS
+ * =========
  */
 
 router.get('/campaigns', async (ctx, next) => {
@@ -34,6 +56,27 @@ router.get('/campaigns', async (ctx, next) => {
 
 router.get('/campaigns/:id', async (ctx, next) => {
   ctx.body = await DB.getCampaign(ctx.db, ctx.params.id)
+})
+
+router.post('/campaigns/:id/test', async (ctx, next) => {
+  const campaign = await DB.getCampaign(ctx.db, ctx.params.id)
+  await ctx.twilio.sendMessage(campaign.message, ctx.request.body)
+  ctx.status = 200
+})
+
+router.post('/campaigns/:id/launch', async (ctx, next) => {
+  const sendMessage = async (ctx, message, member) => {
+    const twilioResponse = await ctx.twilio.sendMessage(message, member)
+    await ctx.fb.sendMessage(message, member, twilioResponse.sid)
+    return
+  }
+
+  const campaign = await DB.getCampaign(ctx.db, ctx.params.id)
+  const segment = await DB.getSegment(ctx.db, campaign.segmentId)
+  const messages = segment.members.map((member) => sendMessage(ctx, campaign.message, member))
+
+  await Promise.all(messages)
+  ctx.status = 200
 })
 
 router.post('/campaigns', async (ctx, next) => {
@@ -131,6 +174,14 @@ router.del('/segments/:segId/members/:id', async (ctx, next) => {
   ctx.status = 200
 })
 
+router.post('/segments/:segId/members/:id/messages', async (ctx, next) => {
+  const { message } = ctx.request.body
+  const member = await DB.getMember(ctx.db, ctx.params.segId, ctx.params.id)
+  const { sid } = await ctx.twilio.sendMessage(message, member)
+  await ctx.fb.sendMessage(message, member, sid)
+  ctx.status = 200
+})
+
 app.use(bodyParser())
 
 /**
@@ -138,7 +189,6 @@ app.use(bodyParser())
  */
 app.use(async (ctx, next) => {
   const start = Date.now()
-  console.log('started...')
   await next()
   const ms = Date.now() - start
   console.log(`${ctx.method} ${ctx.url} - ${ms}`)
@@ -147,6 +197,8 @@ app.use(async (ctx, next) => {
 app.use(router.routes()).use(router.allowedMethods())
 DB.initialize((db) => {
   app.context.db = db
+  app.context.twilio = new Twilio()
+  app.context.fb = new FirebaseService()
   app.listen(3000)
   console.log(`Server started on port ${3000}`)
 })

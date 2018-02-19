@@ -1,9 +1,6 @@
 import Mongo from 'mongodb'
-import dotenv from 'dotenv'
 
 import { hasKeys } from './util'
-
-dotenv.config()
 
 export const COLS = {
   campaigns: 'campaigns',

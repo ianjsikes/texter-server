@@ -19,3 +19,11 @@ export const hasKeys = (keys, obj) => {
     return (o) => hasKeysInner(keys, o)
   }
 }
+
+export const formatPhoneNumber = (phoneNumber) => {
+  if (phoneNumber.startsWith('+1')) {
+    return phoneNumber
+  }
+
+  return `+1${phoneNumber}`
+}

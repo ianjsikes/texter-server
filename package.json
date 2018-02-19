@@ -24,7 +24,8 @@
     "koa-bodyparser": "^4.2.0",
     "koa-router": "^7.4.0",
     "mongodb": "^3.0.2",
-    "mongorito": "^3.0.4"
+    "string-template": "^1.0.0",
+    "twilio": "^3.11.3"
   },
   "devDependencies": {
     "nodemon": "^1.15.0"
