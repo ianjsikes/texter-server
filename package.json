@@ -1,0 +1,22 @@
+{
+  "name": "twilio-server",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/ianjsikes/twilio-server",
+  "author": "Ian J Sikes",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node --experimental-modules index.mjs"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "arrowParens": "always"
+  },
+  "dependencies": {
+    "firebase": "^4.10.0"
+  }
+}
