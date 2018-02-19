@@ -22,11 +22,6 @@ router.post('/incoming', async (ctx, next) => {
 
 router.get('/', async (ctx, next) => {
   ctx.body = JSON.stringify(await fb.getAllData(), null, 2)
-  // const campaigns = await ctx.db
-  //   .collection('campaigns')
-  //   .find()
-  //   .toArray()
-  // ctx.body = campaigns
 })
 
 /**
@@ -109,7 +104,32 @@ router.del('/segments/:id', async (ctx, next) => {
  * MEMBERS
  */
 
-router.get('/segments/:segId/members', async (ctx, next) => {})
+router.get('/segments/:segId/members', async (ctx, next) => {
+  ctx.body = await DB.getAllMembers(ctx.db, ctx.params.segId)
+})
+
+router.get('/segments/:segId/members/:id', async (ctx, next) => {
+  ctx.body = await DB.getMember(ctx.db, ctx.params.segId, ctx.params.id)
+})
+
+router.post('/segments/:segId/members', async (ctx, next) => {
+  if (!hasKeys(['phone'], ctx.request.body)) {
+    ctx.throw(400, 'Invalid member object in request')
+  }
+
+  await DB.createMember(ctx.db, ctx.params.segId, ctx.request.body)
+  ctx.status = 200
+})
+
+router.patch('/segments/:segId/members/:id', async (ctx, next) => {
+  await DB.editMember(ctx.db, ctx.params.segId, ctx.params.id, ctx.request.body)
+  ctx.status = 200
+})
+
+router.del('/segments/:segId/members/:id', async (ctx, next) => {
+  await DB.deleteMember(ctx.db, ctx.params.segId, ctx.params.id)
+  ctx.status = 200
+})
 
 app.use(bodyParser())
 

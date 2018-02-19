@@ -8,8 +8,10 @@ dotenv.config()
 export const COLS = {
   campaigns: 'campaigns',
   segments: 'segments',
-  segment: (id) => `segment-${id}`,
+  members: 'members',
 }
+
+const ID = (i) => new Mongo.ObjectID(i)
 
 export const initialize = async (callback) => {
   Mongo.MongoClient.connect(process.env.DATABASE_URL, async (err, client) => {
@@ -18,6 +20,8 @@ export const initialize = async (callback) => {
     }
 
     const db = client.db('texter-db')
+
+    await db.collection('members').createIndex({ segmentId: 1 })
 
     // db.createCollection(COLS.campaigns, {
     //   validator: {
@@ -62,22 +66,22 @@ export const getAllCampaigns = async (db) => {
 
 export const getCampaign = async (db, id) => {
   const coll = db.collection(COLS.campaigns)
-  return coll.findOne({ _id: new Mongo.ObjectID(id) })
+  return coll.findOne({ _id: ID(id) })
 }
 
 export const createCampaign = async (db, campaign) => {
   const coll = db.collection(COLS.campaigns)
-  return coll.insertOne(campaign)
+  return coll.insertOne({ ...campaign, segmentId: ID(campaign.segmentId) })
 }
 
 export const editCampaign = async (db, id, campaignPartial) => {
   const coll = db.collection(COLS.campaigns)
-  return coll.updateOne({ _id: new Mongo.ObjectID(id) }, { $set: campaignPartial })
+  return coll.updateOne({ _id: ID(id) }, { $set: campaignPartial })
 }
 
 export const deleteCampaign = async (db, id) => {
   const coll = db.collection(COLS.campaigns)
-  return coll.deleteOne({ _id: new Mongo.ObjectID(id) })
+  return coll.deleteOne({ _id: ID(id) })
 }
 
 /**
@@ -90,11 +94,11 @@ export const getAllSegments = async (db) => {
 }
 
 export const getSegment = async (db, id) => {
-  const segments = db.collection(COLS.segments)
-  const segment = db.collection(COLS.segment(id))
+  const segmentsCol = db.collection(COLS.segments)
+  const membersCol = db.collection(COLS.members)
 
-  const metadata = await segments.findOne({ _id: new Mongo.ObjectID(id) })
-  const members = await segment.find().toArray()
+  const metadata = await segmentsCol.findOne({ _id: ID(id) })
+  const members = await membersCol.find({ segmentId: ID(id) }).toArray()
 
   return { ...metadata, members }
 }
@@ -103,19 +107,24 @@ export const createSegment = async (db, segment) => {
   const coll = db.collection(COLS.segments)
   const { insertedId } = await coll.insertOne({ name: segment.name })
 
-  await db.collection(COLS.segment(insertedId)).insertMany(segment.members)
+  const taggedMembers = segment.members.map((member) => ({
+    ...member,
+    segmentId: ID(insertedId),
+  }))
+
+  await db.collection(COLS.members).insertMany(taggedMembers)
   return
 }
 
 export const editSegment = async (db, id, segmentPartial) => {
   const coll = db.collection(COLS.segments)
-  return coll.updateOne({ _id: new Mongo.ObjectID(id) }, { $set: segmentPartial })
+  return coll.updateOne({ _id: ID(id) }, { $set: segmentPartial })
 }
 
 export const deleteSegment = async (db, id) => {
   const coll = db.collection(COLS.segments)
-  await coll.deleteOne({ _id: new Mongo.ObjectID(id) })
-  await db.collection(COLS.segment(id)).drop()
+  await coll.deleteOne({ _id: ID(id) })
+  await db.collection(COLS.members).deleteMany({ segmentId: ID(id) })
   return
 }
 
@@ -124,26 +133,26 @@ export const deleteSegment = async (db, id) => {
  */
 
 export const getAllMembers = async (db, segId) => {
-  const coll = db.collection(COLS.segment(segId))
-  return coll.find().toArray()
+  const coll = db.collection(COLS.members)
+  return coll.find({ segmentId: ID(segId) }).toArray()
 }
 
 export const getMember = async (db, segId, id) => {
-  const coll = db.collection(COLS.segment(segId))
-  return coll.findOne({ _id: new Mongo.ObjectID(id) })
+  const coll = db.collection(COLS.members)
+  return coll.findOne({ _id: ID(id), segmentId: ID(segId) })
 }
 
 export const createMember = async (db, segId, member) => {
-  const coll = db.collection(COLS.segment(segId))
-  return coll.insertOne(member)
+  const coll = db.collection(COLS.members)
+  return coll.insertOne({ ...member, segmentId: ID(segId) })
 }
 
 export const editMember = async (db, segId, id, memberPartial) => {
-  const coll = db.collection(COLS.segment(segId))
-  return coll.updateOne({ _id: new Mongo.ObjectID(id) }, { $set: memberPartial })
+  const coll = db.collection(COLS.members)
+  return coll.updateOne({ _id: ID(id), segmentId: ID(segId) }, { $set: memberPartial })
 }
 
 export const deleteMember = async (db, segId, id) => {
-  const coll = db.collection(COLS.segment(segId))
-  return coll.deleteOne({ _id: new Mongo.ObjectID(id) })
+  const coll = db.collection(COLS.members)
+  return coll.deleteOne({ _id: ID(id), segmentId: ID(segId) })
 }
