@@ -18,8 +18,13 @@
     "arrowParens": "always"
   },
   "dependencies": {
+    "dotenv": "^5.0.0",
     "firebase": "^4.10.0",
-    "koa": "^2.5.0"
+    "koa": "^2.5.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-router": "^7.4.0",
+    "mongodb": "^3.0.2",
+    "mongorito": "^3.0.4"
   },
   "devDependencies": {
     "nodemon": "^1.15.0"

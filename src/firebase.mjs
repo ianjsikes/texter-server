@@ -9,16 +9,30 @@ const config = {
   messagingSenderId: '22836786973',
 }
 
-export function FirebaseService() {
-  Firebase.initializeApp(config)
-  this.db = Firebase.database()
-  return this
-}
+export class FirebaseService {
+  constructor() {
+    Firebase.initializeApp(config)
+    this.db = Firebase.database()
+  }
 
-FirebaseService.prototype.getAllData = async function() {
-  return new Promise((resolve, reject) => {
-    this.db.ref('messages').once('value', (snapshot) => {
-      resolve(snapshot.val())
+  async getAllData() {
+    return new Promise((resolve, reject) => {
+      this.db.ref('messages').once('value', (snapshot) => {
+        resolve(snapshot.val())
+      })
     })
-  })
+  }
+
+  async addIncomingMessage(message) {
+    if (!message || !message.From || !message.To || !message.Body) {
+      console.log('Invalid message!')
+      return
+    }
+    const newMessageRef = this.db.ref(`messages/${message.From}`).push()
+    newMessageRef.set({
+      from: message.From,
+      to: message.To,
+      body: message.Body,
+    })
+  }
 }

@@ -1,0 +1,22 @@
+{
+  "campaigns": [
+    {
+      "title": "Vote in the upcoming primary!",
+      "segment": "Volunteers",
+      "message": "Don't forget to vote in the upcoming primary!",
+      "sent": true
+    }
+  ],
+  "segments": [
+    {
+      "name": "Volunteers",
+      "members": [
+        {
+          "firstName": "Ian",
+          "lastName": "Sikes",
+          "phone": "+13102372273"
+        }
+      ]
+    }
+  ]
+}
