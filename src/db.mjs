@@ -1,3 +1,4 @@
+// @ts-check
 import Mongo from 'mongodb'
 
 import { hasKeys } from './util'
@@ -10,6 +11,26 @@ export const COLS = {
 
 const ID = (i) => new Mongo.ObjectID(i)
 
+export class Database {
+  constructor(callback) {
+    Mongo.MongoClient.connect(process.env.DATABASE_URL, async (err, client) => {
+      if (err) {
+        return console.log(err)
+      }
+
+      this.db = client.db('texter-db')
+
+      this.campaign = new Campaign(this.db)
+      this.member = new Member(this.db)
+      this.segment = new Segment(this.db, this.member)
+
+      await this.db.collection('members').createIndex({ segmentId: 1 })
+
+      callback(this.db)
+    })
+  }
+}
+
 export const initialize = async (callback) => {
   Mongo.MongoClient.connect(process.env.DATABASE_URL, async (err, client) => {
     if (err) {
@@ -20,136 +41,111 @@ export const initialize = async (callback) => {
 
     await db.collection('members').createIndex({ segmentId: 1 })
 
-    // db.createCollection(COLS.campaigns, {
-    //   validator: {
-    //     $jsonSchema: {
-    //       bsonType: 'object',
-    //       required: ['title', 'segmentId', 'message', 'sent'],
-    //       minProperties: 4,
-    //       properties: {
-    //         title: {
-    //           bsonType: 'string',
-    //           description: 'must be a string and is required',
-    //         },
-    //         segmentId: {
-    //           bsonType: 'string',
-    //           description: 'must be a string and is required',
-    //         },
-    //         message: {
-    //           bsonType: 'string',
-    //           description: 'must be a string and is required',
-    //         },
-    //         sent: {
-    //           bsonType: 'bool',
-    //           description: 'must be a boolean and is required',
-    //         },
-    //       },
-    //     },
-    //   },
-    // })
-
     callback(db)
   })
 }
 
-/**
- * CAMPAIGNS
- */
+class Campaign {
+  constructor(db) {
+    this.db = db
+    this.collection = this.db.collection(COLS.campaigns)
+  }
 
-export const getAllCampaigns = async (db) => {
-  const coll = db.collection(COLS.campaigns)
-  return coll.find().toArray()
-}
+  async list() {
+    return this.collection.find().toArray()
+  }
 
-export const getCampaign = async (db, id) => {
-  const coll = db.collection(COLS.campaigns)
-  return coll.findOne({ _id: ID(id) })
-}
+  async get(id) {
+    return this.collection.findOne({ _id: ID(id) })
+  }
 
-export const createCampaign = async (db, campaign) => {
-  const coll = db.collection(COLS.campaigns)
-  return coll.insertOne({ ...campaign, segmentId: ID(campaign.segmentId) })
-}
+  async create(data) {
+    return this.collection.insertOne({ ...data, segmentId: ID(data.segmentId) })
+  }
 
-export const editCampaign = async (db, id, campaignPartial) => {
-  const coll = db.collection(COLS.campaigns)
-  return coll.updateOne({ _id: ID(id) }, { $set: campaignPartial })
-}
+  async update(id, data) {
+    return this.collection.updateOne({ _id: ID(id) }, { $set: data })
+  }
 
-export const deleteCampaign = async (db, id) => {
-  const coll = db.collection(COLS.campaigns)
-  return coll.deleteOne({ _id: ID(id) })
+  async delete(id) {
+    return this.collection.deleteOne({ _id: ID(id) })
+  }
 }
 
 /**
  * SEGMENTS
  */
 
-export const getAllSegments = async (db) => {
-  const coll = db.collection(COLS.segments)
-  return coll.find().toArray()
-}
+class Segment {
+  constructor(db, member) {
+    this.db = db
+    this.member = member
+    this.collection = this.db.collection(COLS.segments)
+  }
 
-export const getSegment = async (db, id) => {
-  const segmentsCol = db.collection(COLS.segments)
-  const membersCol = db.collection(COLS.members)
+  async list() {
+    return this.collection.find().toArray()
+  }
 
-  const metadata = await segmentsCol.findOne({ _id: ID(id) })
-  const members = await membersCol.find({ segmentId: ID(id) }).toArray()
+  async get(id) {
+    const metadata = await this.collection.findOne({ _id: ID(id) })
+    const members = await this.member.list(id)
+    return { ...metadata, members }
+  }
 
-  return { ...metadata, members }
-}
+  async create(data) {
+    const { insertedId } = await this.collection.insertOne({ name: data.name })
 
-export const createSegment = async (db, segment) => {
-  const coll = db.collection(COLS.segments)
-  const { insertedId } = await coll.insertOne({ name: segment.name })
+    return this.member.createMany(insertedId, data.members)
+  }
 
-  const taggedMembers = segment.members.map((member) => ({
-    ...member,
-    segmentId: ID(insertedId),
-  }))
+  async update(id, data) {
+    return this.collection.updateOne({ _id: ID(id) }, { $set: data })
+  }
 
-  await db.collection(COLS.members).insertMany(taggedMembers)
-  return
-}
-
-export const editSegment = async (db, id, segmentPartial) => {
-  const coll = db.collection(COLS.segments)
-  return coll.updateOne({ _id: ID(id) }, { $set: segmentPartial })
-}
-
-export const deleteSegment = async (db, id) => {
-  const coll = db.collection(COLS.segments)
-  await coll.deleteOne({ _id: ID(id) })
-  await db.collection(COLS.members).deleteMany({ segmentId: ID(id) })
-  return
+  async delete(id) {
+    await this.collection.deleteOne({ _id: ID(id) })
+    await this.member.deleteMany(id)
+    return
+  }
 }
 
 /**
  * MEMBERS
  */
 
-export const getAllMembers = async (db, segId) => {
-  const coll = db.collection(COLS.members)
-  return coll.find({ segmentId: ID(segId) }).toArray()
-}
+class Member {
+  constructor(db) {
+    this.db = db
+    this.collection = this.db.collection(COLS.members)
+  }
 
-export const getMember = async (db, segId, id) => {
-  const coll = db.collection(COLS.members)
-  return coll.findOne({ _id: ID(id), segmentId: ID(segId) })
-}
+  async list(segmentId) {
+    return this.collection.find({ segmentId: ID(segmentId) }).toArray()
+  }
 
-export const createMember = async (db, segId, member) => {
-  const coll = db.collection(COLS.members)
-  return coll.insertOne({ ...member, segmentId: ID(segId) })
-}
+  async get(id) {
+    return this.collection.findOne({ _id: ID(id) })
+  }
 
-export const editMember = async (db, segId, id, memberPartial) => {
-  const coll = db.collection(COLS.members)
-  return coll.updateOne({ _id: ID(id), segmentId: ID(segId) }, { $set: memberPartial })
-}
+  async create(segmentId, data) {
+    return this.collection.insertOne({ ...data, segmentId: ID(segmentId) })
+  }
 
-export const deleteMember = async (db, segId, id) => {
-  const coll = db.collection(COLS.members)
-  return coll.deleteOne({ _id: ID(id), segmentId: ID(segId) })
+  async createMany(segmentId, members) {
+    const taggedMembers = members.map((member) => ({
+      ...member,
+      segmentId: ID(segmentId),
+    }))
+
+    return this.collection.insertMany(taggedMembers)
+  }
+
+  async update(id, data) {
+    return this.collection.updateOne({ _id: ID(id) }, { $set: data })
+  }
+
+  async delete(id) {
+    return this.collection.deleteOne({ _id: ID(id) })
+  }
 }

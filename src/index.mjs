@@ -51,15 +51,15 @@ router.post('/twilio', async (ctx, next) => {
  */
 
 router.get('/campaigns', async (ctx, next) => {
-  ctx.body = await DB.getAllCampaigns(ctx.db)
+  ctx.body = await ctx.database.campaign.list()
 })
 
 router.get('/campaigns/:id', async (ctx, next) => {
-  ctx.body = await DB.getCampaign(ctx.db, ctx.params.id)
+  ctx.body = await ctx.db.campaign.get(ctx.params.id)
 })
 
 router.post('/campaigns/:id/test', async (ctx, next) => {
-  const campaign = await DB.getCampaign(ctx.db, ctx.params.id)
+  const campaign = await ctx.db.campaign.get(ctx.params.id)
   await ctx.twilio.sendMessage(campaign.message, ctx.request.body)
   ctx.status = 200
 })
@@ -71,8 +71,8 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
     return
   }
 
-  const campaign = await DB.getCampaign(ctx.db, ctx.params.id)
-  const segment = await DB.getSegment(ctx.db, campaign.segmentId)
+  const campaign = await ctx.db.campaign.get(ctx.params.id)
+  const segment = await ctx.db.segment.get(campaign.segmentId)
   const messages = segment.members.map((member) => sendMessage(ctx, campaign.message, member))
 
   await Promise.all(messages)
@@ -86,7 +86,7 @@ router.post('/campaigns', async (ctx, next) => {
     ctx.throw(400, 'Invalid campaign object in request')
   }
 
-  await DB.createCampaign(ctx.db, body)
+  await ctx.db.campaign.create(body)
   ctx.status = 200
 })
 
@@ -94,14 +94,14 @@ router.patch('/campaigns/:id', async (ctx, next) => {
   const id = ctx.params.id
   const body = ctx.request.body
 
-  await DB.editCampaign(ctx.db, id, body)
+  await ctx.db.campaign.update(id, body)
   ctx.status = 200
 })
 
 router.del('/campaigns/:id', async (ctx, next) => {
   const id = ctx.params.id
 
-  await DB.deleteCampaign(ctx.db, id)
+  await ctx.db.campaign.delete(id)
   ctx.status = 200
 })
 
@@ -110,11 +110,11 @@ router.del('/campaigns/:id', async (ctx, next) => {
  */
 
 router.get('/segments', async (ctx, next) => {
-  ctx.body = await DB.getAllSegments(ctx.db)
+  ctx.body = await ctx.db.segment.list()
 })
 
 router.get('/segments/:id', async (ctx, next) => {
-  ctx.body = await DB.getSegment(ctx.db, ctx.params.id)
+  ctx.body = await ctx.db.segment.get(ctx.params.id)
 })
 
 router.post('/segments', async (ctx, next) => {
@@ -124,7 +124,7 @@ router.post('/segments', async (ctx, next) => {
     ctx.throw(400, 'Invalid segment object in request')
   }
 
-  await DB.createSegment(ctx.db, body)
+  await ctx.db.segment.create(body)
   ctx.status = 200
 })
 
@@ -132,14 +132,14 @@ router.patch('/segments/:id', async (ctx, next) => {
   const id = ctx.params.id
   const body = ctx.request.body
 
-  await DB.editSegment(ctx.db, id, body)
+  await ctx.db.segment.update(id, body)
   ctx.status = 200
 })
 
 router.del('/segments/:id', async (ctx, next) => {
   const id = ctx.params.id
 
-  await DB.deleteSegment(ctx.db, id)
+  await ctx.db.segment.delete(id)
   ctx.status = 200
 })
 
@@ -148,11 +148,11 @@ router.del('/segments/:id', async (ctx, next) => {
  */
 
 router.get('/segments/:segId/members', async (ctx, next) => {
-  ctx.body = await DB.getAllMembers(ctx.db, ctx.params.segId)
+  ctx.body = await ctx.db.member.list(ctx.params.segId)
 })
 
 router.get('/segments/:segId/members/:id', async (ctx, next) => {
-  ctx.body = await DB.getMember(ctx.db, ctx.params.segId, ctx.params.id)
+  ctx.body = await ctx.db.member.get(ctx.params.id)
 })
 
 router.post('/segments/:segId/members', async (ctx, next) => {
@@ -160,23 +160,23 @@ router.post('/segments/:segId/members', async (ctx, next) => {
     ctx.throw(400, 'Invalid member object in request')
   }
 
-  await DB.createMember(ctx.db, ctx.params.segId, ctx.request.body)
+  await ctx.db.member.create(ctx.params.segId, ctx.request.body)
   ctx.status = 200
 })
 
 router.patch('/segments/:segId/members/:id', async (ctx, next) => {
-  await DB.editMember(ctx.db, ctx.params.segId, ctx.params.id, ctx.request.body)
+  await ctx.db.member.update(ctx.params.id, ctx.request.body)
   ctx.status = 200
 })
 
 router.del('/segments/:segId/members/:id', async (ctx, next) => {
-  await DB.deleteMember(ctx.db, ctx.params.segId, ctx.params.id)
+  await ctx.db.member.delete(ctx.params.id)
   ctx.status = 200
 })
 
 router.post('/segments/:segId/members/:id/messages', async (ctx, next) => {
   const { message } = ctx.request.body
-  const member = await DB.getMember(ctx.db, ctx.params.segId, ctx.params.id)
+  const member = await ctx.db.member.get(ctx.params.id)
   const { sid } = await ctx.twilio.sendMessage(message, member)
   await ctx.fb.sendMessage(message, member, sid)
   ctx.status = 200
@@ -195,8 +195,9 @@ app.use(async (ctx, next) => {
 })
 
 app.use(router.routes()).use(router.allowedMethods())
-DB.initialize((db) => {
-  app.context.db = db
+const database = new DB.Database((db) => {
+  // app.context.db = db
+  app.context.db = database
   app.context.twilio = new Twilio()
   app.context.fb = new FirebaseService()
   app.listen(3000)
