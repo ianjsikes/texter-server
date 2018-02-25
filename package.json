@@ -1,8 +1,8 @@
 {
-  "name": "twilio-server",
+  "name": "texter-server",
   "version": "0.0.1",
   "main": "src/index.mjs",
-  "repository": "https://github.com/ianjsikes/twilio-server",
+  "repository": "https://github.com/ianjsikes/texter-server",
   "author": "Ian J Sikes",
   "license": "MIT",
   "private": true,
