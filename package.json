@@ -22,6 +22,7 @@
     "firebase": "^4.10.0",
     "koa": "^2.5.0",
     "koa-bodyparser": "^4.2.0",
+    "koa-cors": "^0.0.16",
     "koa-router": "^7.4.0",
     "mongodb": "^3.0.2",
     "string-template": "^1.0.0",

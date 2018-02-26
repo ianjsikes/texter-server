@@ -5,6 +5,7 @@ import Router from 'koa-router'
 import bodyParser from 'koa-bodyparser'
 import Mongo from 'mongodb'
 import dotenv from 'dotenv'
+import cors from 'koa-cors'
 
 import { FirebaseService } from './firebase'
 import { hasKeys } from './util'
@@ -182,6 +183,7 @@ router.post('/segments/:segId/members/:id/messages', async (ctx, next) => {
   ctx.status = 200
 })
 
+app.use(cors())
 app.use(bodyParser())
 
 /**
