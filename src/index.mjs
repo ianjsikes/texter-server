@@ -5,7 +5,7 @@ import Router from 'koa-router'
 import bodyParser from 'koa-bodyparser'
 import Mongo from 'mongodb'
 import dotenv from 'dotenv'
-import cors from 'koa-cors'
+import cors from '@koa/cors'
 
 import { FirebaseService } from './firebase'
 import { hasKeys } from './util'
@@ -52,7 +52,7 @@ router.post('/twilio', async (ctx, next) => {
  */
 
 router.get('/campaigns', async (ctx, next) => {
-  ctx.body = await ctx.database.campaign.list()
+  ctx.body = await ctx.db.campaign.list()
 })
 
 router.get('/campaigns/:id', async (ctx, next) => {
