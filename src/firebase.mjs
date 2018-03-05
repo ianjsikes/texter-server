@@ -33,7 +33,7 @@ export class FirebaseService {
       return
     }
     await this.db
-      .ref(`segments/${member.segmentId}/messages/${message.From}/${message.MessageSid}`)
+      .ref(`segments/${member.segmentId}/messages/${member._id}/${message.MessageSid}`)
       .set({
         from: message.From,
         to: message.To,
@@ -42,17 +42,15 @@ export class FirebaseService {
   }
 
   async sendMessage(message, recipient, sid) {
-    await this.db
-      .ref(`segments/${recipient.segmentId}/messages/${formatPhoneNumber(recipient.phone)}/${sid}`)
-      .set({
-        to: recipient.phone,
-        body: format(message, recipient),
-      })
+    await this.db.ref(`segments/${recipient.segmentId}/messages/${recipient._id}/${sid}`).set({
+      to: recipient.phone,
+      body: format(message, recipient),
+    })
   }
 
   async setMessageStatus(phone, sid, status, member) {
     await this.db
-      .ref(`segments/${member.segmentId}/messages/${formatPhoneNumber(phone)}/${sid}`)
+      .ref(`segments/${member.segmentId}/messages/${member._id}/${sid}`)
       .update({ status })
   }
 }
