@@ -94,13 +94,26 @@ class Segment {
   }
 
   async create(data) {
-    const { insertedId } = await this.collection.insertOne({ name: data.name })
+    const { insertedId } = await this.collection.insertOne({
+      name: data.name,
+      numMembers: data.members.length,
+      unread: 0,
+    })
 
     return this.member.createMany(insertedId, data.members)
   }
 
   async update(id, data) {
     return this.collection.updateOne({ _id: ID(id) }, { $set: data })
+  }
+
+  async newUnread(id) {
+    const { unread } = await this.collection.findOne({ _id: ID(id) })
+    return this.collection.updateOne({ _id: ID(id) }, { $set: { unread: unread + 1 } })
+  }
+
+  async clearUnreads(id) {
+    return this.collection.updateOne({ _id: ID(id) }, { $set: { unread: 0 } })
   }
 
   async delete(id) {
@@ -133,7 +146,14 @@ class Member {
   }
 
   async create(segmentId, data) {
+    if (!data.phone.startsWith('+1')) {
+      data.phone = `+1${data.phone}`
+    }
     const { insertedId } = this.collection.insertOne({ ...data, segmentId: ID(segmentId) })
+    const { numMembers } = await this.db.collection(COLS.segments).findOne({ _id: ID(segmentId) })
+    await this.db
+      .collection(COLS.segments)
+      .updateOne({ _id: ID(segmentId) }, { $set: { numMembers: numMembers + 1 } })
     return {
       ...data,
       _id: ID(insertedId),
@@ -143,6 +163,7 @@ class Member {
   async createMany(segmentId, members) {
     const taggedMembers = members.map((member) => ({
       ...member,
+      phone: member.phone.startsWith('+1') ? member.phone : `+1${member.phone}`,
       segmentId: ID(segmentId),
     }))
 
@@ -154,6 +175,19 @@ class Member {
   }
 
   async delete(id) {
+    const member = await this.collection.findOne({ _id: ID(id) })
+
+    const { numMembers } = await this.db
+      .collection(COLS.segments)
+      .findOne({ _id: ID(member.segmentId) })
+    await this.db
+      .collection(COLS.segments)
+      .updateOne({ _id: ID(member.segmentId) }, { $set: { numMembers: numMembers - 1 } })
+
     return this.collection.deleteOne({ _id: ID(id) })
+  }
+
+  async deleteMany(segmentId) {
+    return this.collection.deleteMany({ segmentId: ID(segmentId) })
   }
 }

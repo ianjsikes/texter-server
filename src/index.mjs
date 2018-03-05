@@ -23,6 +23,7 @@ router.post('/incoming', async (ctx, next) => {
   console.log('From member: ', member)
   if (member) {
     await ctx.fb.addIncomingMessage(ctx.request.body, member)
+    await ctx.db.segment.newUnread(member.segmentId)
   }
   ctx.status = 200
 })
@@ -148,6 +149,11 @@ router.del('/segments/:id', async (ctx, next) => {
   const id = ctx.params.id
 
   await ctx.db.segment.delete(id)
+  ctx.status = 200
+})
+
+router.post('/segments/:id/unread', async (ctx, next) => {
+  await ctx.db.segment.clearUnreads()
   ctx.status = 200
 })
 
