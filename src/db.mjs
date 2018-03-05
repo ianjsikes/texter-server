@@ -128,8 +128,16 @@ class Member {
     return this.collection.findOne({ _id: ID(id) })
   }
 
+  async getByPhone(phone) {
+    return this.collection.findOne({ phone })
+  }
+
   async create(segmentId, data) {
-    return this.collection.insertOne({ ...data, segmentId: ID(segmentId) })
+    const { insertedId } = this.collection.insertOne({ ...data, segmentId: ID(segmentId) })
+    return {
+      ...data,
+      _id: ID(insertedId),
+    }
   }
 
   async createMany(segmentId, members) {

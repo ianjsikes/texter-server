@@ -19,7 +19,11 @@ const router = new Router()
 router.post('/incoming', async (ctx, next) => {
   console.log('incoming message: ', ctx.request.body)
   console.log('body type', typeof ctx.request.body)
-  await ctx.fb.addIncomingMessage(ctx.request.body)
+  const member = await ctx.db.member.getByPhone(ctx.request.body.From)
+  console.log('From member: ', member)
+  if (member) {
+    await ctx.fb.addIncomingMessage(ctx.request.body, member)
+  }
   ctx.status = 200
 })
 
@@ -37,7 +41,10 @@ router.post('/twilio', async (ctx, next) => {
     case 'delivered':
     case 'undelivered':
     case 'failed':
-      ctx.fb.setMessageStatus(message.To, message.MessageSid, message.MessageStatus)
+      const member = await ctx.db.member.getByPhone(message.To)
+      if (member) {
+        ctx.fb.setMessageStatus(message.To, message.MessageSid, message.MessageStatus, member)
+      }
       break
     default:
       break
@@ -161,8 +168,7 @@ router.post('/segments/:segId/members', async (ctx, next) => {
     ctx.throw(400, 'Invalid member object in request')
   }
 
-  await ctx.db.member.create(ctx.params.segId, ctx.request.body)
-  ctx.status = 200
+  ctx.body = await ctx.db.member.create(ctx.params.segId, ctx.request.body)
 })
 
 router.patch('/segments/:segId/members/:id', async (ctx, next) => {
@@ -202,6 +208,6 @@ const database = new DB.Database((db) => {
   app.context.db = database
   app.context.twilio = new Twilio()
   app.context.fb = new FirebaseService()
-  app.listen(3000)
-  console.log(`Server started on port ${3000}`)
+  app.listen(4000)
+  console.log(`Server started on port ${4000}`)
 })
