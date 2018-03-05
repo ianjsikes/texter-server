@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node --experimental-modules src/index.mjs",
     "dev": "nodemon --experimental-modules src/index.mjs",
-    "deploy": "now --dotenv --public"
+    "deploy": "now --dotenv --public && now alias \"$(pbpaste)\" texter-server"
   },
   "prettier": {
     "printWidth": 100,
