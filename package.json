@@ -8,7 +8,8 @@
   "private": true,
   "scripts": {
     "start": "node --experimental-modules src/index.mjs",
-    "dev": "nodemon --experimental-modules src/index.mjs"
+    "dev": "nodemon --experimental-modules src/index.mjs",
+    "deploy": "now --dotenv --public"
   },
   "prettier": {
     "printWidth": 100,
