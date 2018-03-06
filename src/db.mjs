@@ -75,6 +75,10 @@ class Campaign {
     return this.collection.updateOne({ _id: ID(id) }, { $set: data })
   }
 
+  async launch(id) {
+    return this.collection.updateOne({ _id: ID(id) }, { $set: { sent: true } })
+  }
+
   async delete(id) {
     return this.collection.deleteOne({ _id: ID(id) })
   }
