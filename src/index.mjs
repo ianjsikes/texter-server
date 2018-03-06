@@ -87,10 +87,15 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
   }
   await ctx.db.campaign.launch(ctx.params.id)
   const segment = await ctx.db.segment.get(campaign.segmentId)
-  const messages = segment.members.map((member) => sendMessage(ctx, campaign.message, member))
 
-  await Promise.all(messages)
-  ctx.status = 200
+  try {
+    const messages = segment.members.map((member) => sendMessage(ctx, campaign.message, member))
+    await Promise.all(messages)
+  } catch (error) {
+    console.warn(error)
+  } finally {
+    ctx.status = 200
+  }
 })
 
 router.post('/campaigns', async (ctx, next) => {
