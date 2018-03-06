@@ -60,7 +60,15 @@ class Campaign {
   }
 
   async create(data) {
-    return this.collection.insertOne({ ...data, segmentId: ID(data.segmentId) })
+    const { insertedId } = await this.collection.insertOne({
+      ...data,
+      segmentId: ID(data.segmentId),
+    })
+
+    return {
+      ...data,
+      _id: ID(insertedId),
+    }
   }
 
   async update(id, data) {
@@ -96,11 +104,18 @@ class Segment {
   async create(data) {
     const { insertedId } = await this.collection.insertOne({
       name: data.name,
-      numMembers: data.members.length,
+      numMembers: data.members ? data.members.length : 0,
       unread: 0,
     })
 
-    return this.member.createMany(insertedId, data.members)
+    if (data.members && data.members.length > 0) {
+      await this.member.createMany(insertedId, data.members)
+    }
+
+    return {
+      ...data,
+      _id: ID(insertedId),
+    }
   }
 
   async update(id, data) {

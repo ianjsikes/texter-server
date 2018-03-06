@@ -95,8 +95,7 @@ router.post('/campaigns', async (ctx, next) => {
     ctx.throw(400, 'Invalid campaign object in request')
   }
 
-  await ctx.db.campaign.create(body)
-  ctx.status = 200
+  ctx.body = await ctx.db.campaign.create(body)
 })
 
 router.patch('/campaigns/:id', async (ctx, next) => {
@@ -133,8 +132,7 @@ router.post('/segments', async (ctx, next) => {
     ctx.throw(400, 'Invalid segment object in request')
   }
 
-  await ctx.db.segment.create(body)
-  ctx.status = 200
+  ctx.body = await ctx.db.segment.create(body)
 })
 
 router.patch('/segments/:id', async (ctx, next) => {
