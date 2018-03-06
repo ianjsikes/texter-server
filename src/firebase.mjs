@@ -38,6 +38,7 @@ export class FirebaseService {
         from: message.From,
         to: message.To,
         body: message.Body,
+        timestamp: Date.now(),
       })
   }
 
@@ -45,6 +46,8 @@ export class FirebaseService {
     await this.db.ref(`segments/${recipient.segmentId}/messages/${recipient._id}/${sid}`).set({
       to: recipient.phone,
       body: format(message, recipient),
+      from: 'texter',
+      timestamp: Date.now(),
     })
   }
 
