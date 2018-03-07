@@ -76,7 +76,7 @@ router.post('/campaigns/:id/test', async (ctx, next) => {
 router.post('/campaigns/:id/launch', async (ctx, next) => {
   const sendMessage = async (ctx, message, member) => {
     const twilioResponse = await ctx.twilio.sendMessage(message, member)
-    await ctx.fb.sendMessage(message, member, twilioResponse.sid)
+    // await ctx.fb.sendMessage(message, member, twilioResponse.sid)
     return
   }
 
@@ -86,6 +86,10 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
     return
   }
   await ctx.db.campaign.launch(ctx.params.id)
+  await ctx.db.segment.update(campaign.segmentId, {
+    lastCampaignSent: campaign._id,
+    lastCampaignTime: Date.now(),
+  })
   const segment = await ctx.db.segment.get(campaign.segmentId)
 
   try {
