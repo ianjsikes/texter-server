@@ -40,11 +40,27 @@ router.post('/twilio', async (ctx, next) => {
   const message = ctx.request.body
   switch (message.MessageStatus) {
     case 'delivered':
+      {
+        const member = await ctx.db.member.getByPhone(message.To)
+        if (member) {
+          const segment = await ctx.db.segment.get(member.segmentId)
+          await ctx.db.segment.update(member.segmentId, {
+            messagesDelivered: (segment.messagesDelivered || 0) + 1,
+          })
+        }
+      }
+      break
     case 'undelivered':
     case 'failed':
-      const member = await ctx.db.member.getByPhone(message.To)
-      if (member) {
-        ctx.fb.setMessageStatus(message.To, message.MessageSid, message.MessageStatus, member)
+      {
+        const member = await ctx.db.member.getByPhone(message.To)
+        if (member) {
+          const segment = await ctx.db.segment.get(member.segmentId)
+          await ctx.db.segment.update(member.segmentId, {
+            messagesFailed: (segment.messagesFailed || 0) + 1,
+          })
+          await ctx.db.member.update(member._id, { invalid: true })
+        }
       }
       break
     default:
@@ -89,6 +105,8 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
   await ctx.db.segment.update(campaign.segmentId, {
     lastCampaignSent: campaign._id,
     lastCampaignTime: Date.now(),
+    messagesDelivered: 0,
+    messagesFailed: 0,
   })
   const segment = await ctx.db.segment.get(campaign.segmentId)
 
