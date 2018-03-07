@@ -13,7 +13,7 @@ export class Twilio {
       to: '+13102372273',
       messagingServiceSid: process.env.TWILIO_SERVICE_SID,
       body: 'This is a test',
-      statusCallback: 'http://41cb3d19.ngrok.io/twilio',
+      statusCallback: 'https://texter-server.now.sh/twilio',
     })
   }
 
@@ -23,7 +23,7 @@ export class Twilio {
     return this.client.messages.create({
       to: formatPhoneNumber(recipient.phone),
       messagingServiceSid: process.env.TWILIO_SERVICE_SID,
-      statusCallback: 'http://6912ebe4.ngrok.io/twilio',
+      statusCallback: 'https://texter-server.now.sh/twilio',
       body,
     })
   }
