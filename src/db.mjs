@@ -137,6 +137,7 @@ class Segment {
 
   async delete(id) {
     await this.collection.deleteOne({ _id: ID(id) })
+    await this.db.collection(COLS.campaigns).deleteMany({ segmentId: ID(id) })
     await this.member.deleteMany(id)
     return
   }
