@@ -25,11 +25,15 @@ router.post('/incoming', async (ctx, next) => {
     await ctx.fb.addIncomingMessage(ctx.request.body, member)
     await ctx.db.segment.newUnread(member.segmentId)
   }
-  ctx.status = 200
+  ctx.response.body = null
 })
 
 router.get('/', async (ctx, next) => {
   ctx.body = JSON.stringify(await ctx.fb.getAllData(), null, 2)
+})
+
+router.post('/test', async (ctx, next) => {
+  ctx.response.body = null
 })
 
 /**
