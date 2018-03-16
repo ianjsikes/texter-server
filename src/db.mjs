@@ -154,6 +154,10 @@ class Member {
     this.collection = this.db.collection(COLS.members)
   }
 
+  async listAll() {
+    return this.collection.find().toArray()
+  }
+
   async list(segmentId) {
     return this.collection.find({ segmentId: ID(segmentId) }).toArray()
   }
@@ -163,7 +167,19 @@ class Member {
   }
 
   async getByPhone(phone) {
-    return this.collection.findOne({ phone: phoneFormatter.normalize(phone) })
+    const allMembers = await this.collection
+      .find({ phone: phoneFormatter.normalize(phone) })
+      .toArray()
+    let latestMember = allMembers[0]
+    let latestTime = 0
+    for (const member of allMembers) {
+      const segment = await this.db.collection(COLS.segments).findOne({ _id: ID(member.segmentId) })
+      if (segment && segment.lastCampaignTime > latestTime) {
+        latestTime = segment.lastCampaignTime
+        latestMember = member
+      }
+    }
+    return latestMember
   }
 
   async create(segmentId, data) {
