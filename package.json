@@ -26,6 +26,7 @@
     "koa-bodyparser": "^4.2.0",
     "koa-router": "^7.4.0",
     "mongodb": "^3.0.2",
+    "phone-formatter": "^0.0.2",
     "string-template": "^1.0.0",
     "twilio": "^3.11.3"
   },

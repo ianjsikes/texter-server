@@ -1,8 +1,6 @@
 import Firebase from 'firebase'
 import format from 'string-template'
 
-import { formatPhoneNumber } from './util'
-
 const config = {
   apiKey: 'AIzaSyDj-Rsl-DnaqwZUeikJw2hcBGUO1FE20Do',
   authDomain: 'kenneth-texter.firebaseapp.com',

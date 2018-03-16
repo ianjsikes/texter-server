@@ -2,8 +2,6 @@
 import Mongo from 'mongodb'
 import phoneFormatter from 'phone-formatter'
 
-import { hasKeys } from './util'
-
 export const COLS = {
   campaigns: 'campaigns',
   segments: 'segments',
@@ -152,6 +150,10 @@ class Member {
   constructor(db) {
     this.db = db
     this.collection = this.db.collection(COLS.members)
+  }
+
+  async listAll() {
+    return this.collection.find().toArray()
   }
 
   async list(segmentId) {

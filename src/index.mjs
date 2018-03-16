@@ -96,7 +96,6 @@ router.post('/campaigns/:id/test', async (ctx, next) => {
 router.post('/campaigns/:id/launch', async (ctx, next) => {
   const sendMessage = async (ctx, message, member) => {
     const twilioResponse = await ctx.twilio.sendMessage(message, member)
-    // await ctx.fb.sendMessage(message, member, twilioResponse.sid)
     return
   }
 
