@@ -17,10 +17,7 @@ const app = new Koa()
 const router = new Router()
 
 router.post('/incoming', async (ctx, next) => {
-  console.log('incoming message: ', ctx.request.body)
-  console.log('body type', typeof ctx.request.body)
   const member = await ctx.db.member.getByPhone(ctx.request.body.From)
-  console.log('From member: ', member)
   if (member) {
     await ctx.fb.addIncomingMessage(ctx.request.body, member)
     await ctx.db.segment.newUnread(member.segmentId)
@@ -114,8 +111,9 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
   const segment = await ctx.db.segment.get(campaign.segmentId)
 
   try {
-    const messages = segment.members.map((member) => sendMessage(ctx, campaign.message, member))
-    await Promise.all(messages)
+    const messages = segment.members.map((member) =>
+      ctx.twilio.sendMessage(campaign.message, member)
+    )
   } catch (error) {
     console.warn(error)
   } finally {
@@ -234,12 +232,12 @@ app.use(bodyParser())
 /**
  * Logger middleware
  */
-app.use(async (ctx, next) => {
-  const start = Date.now()
-  await next()
-  const ms = Date.now() - start
-  console.log(`${ctx.method} ${ctx.url} - ${ms}`)
-})
+// app.use(async (ctx, next) => {
+//   const start = Date.now()
+//   await next()
+//   const ms = Date.now() - start
+//   console.log(`${ctx.method} ${ctx.url} - ${ms}`)
+// })
 
 app.use(router.routes()).use(router.allowedMethods())
 const database = new DB.Database((db) => {

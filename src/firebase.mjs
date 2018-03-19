@@ -25,9 +25,7 @@ export class FirebaseService {
   }
 
   async addIncomingMessage(message, member) {
-    console.log('MESSAGE', message)
     if (!message || !message.From || !message.To || !message.Body) {
-      console.log('Invalid message!')
       return
     }
     await this.db
