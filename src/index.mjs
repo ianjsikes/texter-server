@@ -228,6 +228,10 @@ router.post('/segments/:segId/members/:id/messages', async (ctx, next) => {
   ctx.status = 200
 })
 
+router.get('/logs/last24hours', async (ctx, next) => {
+  ctx.body = await ctx.twilio.getLogs()
+})
+
 app.use(cors())
 app.use(bodyParser())
 
