@@ -22,6 +22,7 @@
     "@koa/cors": "2",
     "dotenv": "^5.0.0",
     "firebase": "^4.10.0",
+    "json2csv": "^4.0.2",
     "koa": "^2.5.0",
     "koa-bodyparser": "^4.2.0",
     "koa-router": "^7.4.0",
@@ -31,6 +32,6 @@
     "twilio": "^3.11.3"
   },
   "devDependencies": {
-    "nodemon": "^1.15.0"
+    "nodemon": "^1.17.2"
   }
 }
