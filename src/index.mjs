@@ -112,7 +112,9 @@ router.post('/campaigns/:id/launch', async (ctx, next) => {
 
   try {
     const messages = segment.members.map((member) =>
-      ctx.twilio.sendMessage(campaign.message, member)
+      ctx.twilio
+        .sendMessage(campaign.message, member)
+        .catch((error) => console.log('sendMessage error', error))
     )
   } catch (error) {
     console.warn(error)
